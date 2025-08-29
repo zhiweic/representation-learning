@@ -1,0 +1,27 @@
+# Core
+torch>=2.0.0
+# experiment with image/audio later
+# torchvision>=0.15.0
+# torchaudio>=2.0.0
+
+# Data handling
+numpy>=1.23
+pandas>=1.5
+scikit-learn>=1.2
+
+# Visualization
+matplotlib>=3.7
+seaborn>=0.12
+umap-learn>=0.5
+
+# NLP / Transformers (for Week 2+)
+transformers>=4.31
+sentence-transformers>=2.2
+
+# Utilities
+tqdm>=4.65
+jupyter>=1.0
+notebook>=6.5
+
+# Optional but useful
+evidently>=0.4   # for monitoring/drift
