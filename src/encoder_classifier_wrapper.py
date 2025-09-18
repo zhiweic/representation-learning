@@ -66,9 +66,10 @@ class EncoderClassifier(nn.Module):
         self.final_norm_pos = final_norm_pos
         self.head = nn.Linear(d_model, 1)
 
-        # ---- projection head for contrastive (SimCLR-style) ----
+        # ---- projection head for contrastive ----
         self.proj = None
         if proj_dim is not None:
+            # simple MLP
             if projector is None:
                 self.proj = nn.Sequential(
                     nn.Linear(d_model, d_model),
@@ -125,4 +126,34 @@ class EncoderClassifier(nn.Module):
     def forward(self, ids: torch.Tensor, mask: torch.Tensor):
         z = self.backbone(x, mask)
         return self.head(z).view(-1) # [B]
+
+
+# Projector head
+class ProjectionHead(nn.Module):
+    """
+    z = head(h) for contrastive training.
+    SimCLR-style: MLP -> (norm) -> nonlinearity -> Linear
+    """
+    def __init__(self, in_dim: int, hid: int = 256, out_dim: int = 128, use_ln: bool = True):
+        super().__init__()
+        layers = [nn.Linear(in_dim, hid)]
+        if use_ln: layers += [nn.LayerNorm(hid)]
+        layers += [nn.ReLU(), nn.Linear(hid, out_dim)]
+        self.net = nn.Sequential(*layers)
+
+    def forward(self, h):           # h: [B, D]
+        z = self.net(h)             # [B, out_dim]
+        z = F.normalize(z, dim=-1)  # L2-normalize for cosine/InfoNCE
+        return z
+    
+
+# Projector with BatchNorm
+class SimCLRProjector(nn.Module):
+    def __init__(self, d, p):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(d, d, bias=False), nn.BatchNorm1d(d), nn.ReLU(inplace=True),
+            nn.Linear(d, p, bias=False), nn.BatchNorm1d(p, affine=False)
+        )
+    def forward(self, x): return self.net(x)
     
